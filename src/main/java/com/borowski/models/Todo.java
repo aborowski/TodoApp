@@ -1,26 +1,14 @@
 package com.borowski.models;
 
-public class Todo {
-	private int id;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+@Entity
+public class Todo extends EntityMetadata {
 	private String title;
 	private String description;
 	private Priority priority;
-
-	public Todo(String title, String description, Priority priority) {
-		super();
-		this.title = title;
-		this.description = description;
-		this.priority = priority;
-	}
-
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
-	}
-
+	
 	public String getTitle() {
 		return title;
 	}
@@ -47,7 +35,7 @@ public class Todo {
 
 	@Override
 	public String toString() {
-		return "Todo [id=" + id + ", title=" + title + ", description=" + description + ", priority=" + priority + "]";
+		return "Todo [" +  super.toString() + title + ", description=" + description + ", priority=" + priority + "]";
 	}
 
 }
