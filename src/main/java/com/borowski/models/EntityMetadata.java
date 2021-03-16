@@ -2,19 +2,26 @@ package com.borowski.models;
 
 import java.time.ZonedDateTime;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
+
+import org.hibernate.annotations.Where;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class EntityMetadata {
 	@Id
+	@GeneratedValue(strategy = GenerationType.TABLE)
 	private int id;
+	@Column(columnDefinition = "timestamp not null default current_timestamp")
 	private ZonedDateTime createdAt;
+	@Column(columnDefinition = "timestamp on update current_timestamp")
 	private ZonedDateTime updatedAt;
-	private ZonedDateTime deletedAt;
 
 	public int getId() {
 		return id;
@@ -40,17 +47,9 @@ public class EntityMetadata {
 		this.updatedAt = updatedAt;
 	}
 
-	public ZonedDateTime getDeletedAt() {
-		return deletedAt;
-	}
-
-	public void setDeletedAt(ZonedDateTime deletedAt) {
-		this.deletedAt = deletedAt;
-	}
-
 	@Override
 	public String toString() {
-		return "EntityMetadata [id + " + id + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + ", deletedAt=" + deletedAt + "]";
+		return "EntityMetadata [id + " + id + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + "]";
 	}
 
 }
