@@ -5,8 +5,6 @@ import java.time.ZonedDateTime;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
-import org.hibernate.annotations.Where;
-
 @Embeddable
 public class SoftDeletable {
 	@Column(columnDefinition = "tinyint default 0 ")
@@ -33,5 +31,4 @@ public class SoftDeletable {
 	public String toString() {
 		return "SoftDeletable [deleted=" + deleted + ", deletedAt=" + deletedAt + "]";
 	}
-
 }

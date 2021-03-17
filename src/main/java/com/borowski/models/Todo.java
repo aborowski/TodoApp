@@ -11,21 +11,27 @@ import javax.persistence.ManyToOne;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 import com.borowski.models.embeddable.SoftDeletable;
+
+@FilterDef(
+		name = "filterTodoDeleted",
+		defaultCondition = "deleted = 0")
 
 @Entity
 @DynamicInsert
 @DynamicUpdate
 @SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
-@Where(clause = "deleted_at IS NULL")
+@Filter(name = "filterTodoDeleted")
 public class Todo extends EntityMetadata {
 	private String title;
 	private String description;
 	private Priority priority;
-	@ManyToOne()
+	@ManyToOne
 	@JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_USER_ID"))
 	private User owner;
 	@ManyToMany
@@ -84,7 +90,7 @@ public class Todo extends EntityMetadata {
 	@Override
 	public String toString() {
 		return super.toString() + " - Todo [title=" + title + ", description=" + description + ", priority=" + priority + ", owner=" + owner
-				+ ", watchers=" + watchers + ", softDeletable=" + softDeletable + "]";
+				+ ", softDeletable=" + softDeletable + "]";
 	}
 	
 	

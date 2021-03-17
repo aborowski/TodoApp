@@ -4,16 +4,24 @@ import javax.persistence.Entity;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 import com.borowski.models.embeddable.SoftDeletable;
+
+@FilterDef(
+		name = "filterUserDeleted",
+		parameters = @ParamDef(name = "deleted", type = "boolean"),
+		defaultCondition = "deleted = :deleted")
+		
 
 @Entity
 @DynamicInsert
 @DynamicUpdate
 @SQLDelete(sql = "update user set deleted = 1, deleted_at = now() where id = ?")
-@Where(clause = "deleted_at IS NULL")
+@Filter(name = "filterUserDeleted")
 public class User extends EntityMetadata {
 	private String username;
 	private String email;
