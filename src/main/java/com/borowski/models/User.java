@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLDelete;
 import com.borowski.models.embeddable.SoftDeletable;
 
 @FilterDef(
-		name = "filterUserDeleted",
+		name = "filterUserNotDeleted",
 		parameters = @ParamDef(name = "deleted", type = "boolean"),
 		defaultCondition = "deleted = :deleted")
 		
@@ -21,7 +21,7 @@ import com.borowski.models.embeddable.SoftDeletable;
 @DynamicInsert
 @DynamicUpdate
 @SQLDelete(sql = "update user set deleted = 1, deleted_at = now() where id = ?")
-@Filter(name = "filterUserDeleted")
+@Filter(name = "filterUserNotDeleted")
 public class User extends EntityMetadata {
 	private String username;
 	private String email;

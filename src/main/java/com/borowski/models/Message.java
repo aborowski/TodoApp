@@ -10,7 +10,7 @@ public class Message extends EntityMetadata {
 	private String message;
 	@ManyToOne
 	@JoinColumn(name = "TODO_ID", foreignKey = @ForeignKey(name = "FK_MESSAGE_TODO_ID"))
-	private Todo ownerPost;
+	private Task task;
 	@ManyToOne
 	@JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_MESSAGE_USER_ID"))
 	private User owner;

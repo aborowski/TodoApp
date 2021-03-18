@@ -8,6 +8,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -19,15 +20,16 @@ import org.hibernate.annotations.SQLDelete;
 import com.borowski.models.embeddable.SoftDeletable;
 
 @FilterDef(
-		name = "filterTodoDeleted",
+		name = "filterTodoNotDeleted",
 		defaultCondition = "deleted = 0")
 
 @Entity
+@Table(name = "TODO")
 @DynamicInsert
 @DynamicUpdate
 @SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
-@Filter(name = "filterTodoDeleted")
-public class Todo extends EntityMetadata {
+@Filter(name = "filterTodoNotDeleted")
+public class Task extends EntityMetadata {
 	private String title;
 	private String description;
 	private Priority priority;
