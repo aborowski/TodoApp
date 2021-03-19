@@ -95,5 +95,44 @@ public class Task extends EntityMetadata {
 				+ ", softDeletable=" + softDeletable + "]";
 	}
 	
+	/**
+	 * Replaces all non-metadata fields with param's data. Doesn't overwrite with null values;
+	 * @param updateData - Desired data.
+	 * @return this
+	 */
+	public Task updateFields(Task updateData) {
+		return updateFields(updateData, false);
+	}
 	
+	/**
+	 * Replaces non-metadata fields with param's data.
+	 * @param updateData - Desired data.
+	 * @param fillNulls - Should null values be written too.
+	 * @return this
+	 */
+	public Task updateFields(Task updateData, boolean fillNulls) {
+		if(fillNulls) {
+			this.description = updateData.getDescription();
+			this.title = updateData.getTitle();
+			this.owner = updateData.getOwner();
+			this.priority = updateData.getPriority();
+			this.softDeletable = updateData.getSoftDeletable();
+			this.watchers = updateData.getWatchers();
+		} else {
+			if(updateData.getDescription() != null)
+				this.description = updateData.getDescription();
+			if(updateData.getTitle() != null)
+				this.title = updateData.getTitle();
+			if(updateData.owner != null)
+				this.owner = updateData.getOwner();
+			if(updateData.getPriority() != null)
+				this.priority = updateData.getPriority();
+			if(updateData.getSoftDeletable() != null)
+				this.softDeletable = updateData.getSoftDeletable();
+			if(updateData.getWatchers() != null)
+				this.watchers = updateData.getWatchers();
+		}
+		
+		return this;
+	}
 }
