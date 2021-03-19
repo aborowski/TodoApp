@@ -56,4 +56,36 @@ public class User extends EntityMetadata {
 		return super.toString() + " - User [username=" + username + ", email=" + email + ", softDeletable=" + softDeletable + "]";
 	}
 
+	/**
+	 * Replaces all non-metadata fields with param's data. Doesn't overwrite with null values;
+	 * @param updateData - Desired data.
+	 * @return this
+	 */
+	public User updateFields(User updateData) {
+		return updateFields(updateData, false);
+	}
+	
+	/**
+	 * Replaces non-metadata fields with param's data.
+	 * @param updateData - Desired data.
+	 * @param fillNulls - Should null values be written too.
+	 * @return this
+	 */
+	public User updateFields(User updateData, boolean fillNulls) {
+		if(fillNulls) {
+			this.username = updateData.getUsername();
+			this.email = updateData.getEmail();
+			this.softDeletable = updateData.getSoftDeletable() == null ? new SoftDeletable() : updateData.getSoftDeletable();
+			
+		} else {
+			if(updateData.getUsername() != null)
+				this.username = updateData.getUsername();
+			if(updateData.getEmail() != null)
+				this.email = updateData.getEmail();
+			if(updateData.getSoftDeletable() != null)
+				this.softDeletable = updateData.getSoftDeletable();
+		}
+		
+		return this;
+	}
 }
