@@ -1,6 +1,5 @@
 package com.borowski.controllers;
 
-import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.EntityManager;
@@ -8,6 +7,8 @@ import javax.persistence.PersistenceContext;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.borowski.exceptions.NoTaskFoundException;
 import com.borowski.models.Task;
+import com.borowski.models.hateoas.TaskModelAssembler;
 import com.borowski.repositories.TaskRepository;
 
 @RestController
@@ -32,43 +34,52 @@ public class TaskRestController {
 	@Autowired
 	TaskRepository repository;
 	
+	@Autowired
+	TaskModelAssembler modelAssembler;
+	
 	@GetMapping
-	public List<Task> getTasks() {
+	public CollectionModel<EntityModel<Task>> getTasks() {
 		Session session = em.unwrap(Session.class);
 		session.enableFilter("filterTaskNotDeleted");
 		
-		return repository.findAll();
+		return modelAssembler.toCollectionModel(repository.findAll());
 	}
 	
 	@GetMapping(path = "{id}")
-	public Task getTaskById(@PathVariable int id) {
+	public EntityModel<Task> getTaskById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		return repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
+		Task task = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
+		
+		return modelAssembler.toModel(task);
 	}
 	
 	@PostMapping
-	public Task addTask(@RequestBody Task task) {
-		return repository.save(task);
+	public EntityModel<Task> addTask(@RequestBody Task task) {
+		Task savedTask = repository.save(task);
+		
+		return modelAssembler.toModel(savedTask);
 	}
 	
 	@PutMapping(path = "{id}")
-	public Task updateTask(@PathVariable int id, @RequestBody Task task) {
+	public EntityModel<Task> updateTask(@PathVariable int id, @RequestBody Task task) {
 		Optional<Task> foundTask = repository.findById(id);
 		if(foundTask.isPresent())
 		{
 			foundTask.get().updateFields(task, true);
-			return repository.save(foundTask.get());
+			return modelAssembler.toModel(repository.save(foundTask.get()));
 		} else {
 			task.setId(id);
-			return repository.save(task);
+			return modelAssembler.toModel(repository.save(task));
 		}
 	}
 	
 	@PatchMapping(path = "{id}")
-	public Task updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
+	public EntityModel<Task> updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
 		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
 		foundTask.updateFields(task);
-		return repository.save(foundTask);
+		Task updatedTask = repository.save(foundTask);
+		
+		return modelAssembler.toModel(updatedTask);
 	}
 	
 	@DeleteMapping("{id}")

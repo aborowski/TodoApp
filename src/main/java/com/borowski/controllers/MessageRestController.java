@@ -1,6 +1,5 @@
 package com.borowski.controllers;
 
-import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.EntityManager;
@@ -8,6 +7,8 @@ import javax.persistence.PersistenceContext;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -20,11 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.borowski.exceptions.NoMessageFoundException;
 import com.borowski.models.Message;
+import com.borowski.models.hateoas.MessageModelAssembler;
 import com.borowski.repositories.MessageRepository;
 
 @RestController
 @RequestMapping(path = "/web-api/messages")
-public class MessageRestRepository {
+public class MessageRestController {
 	
 	@PersistenceContext
 	EntityManager em;
@@ -32,43 +34,46 @@ public class MessageRestRepository {
 	@Autowired
 	MessageRepository repository;
 	
+	@Autowired
+	MessageModelAssembler modelAssembler;
+	
 	@GetMapping
-	public List<Message> getMessages() {
+	public CollectionModel<EntityModel<Message>> getMessages() {
 		Session session = em.unwrap(Session.class);
 		session.enableFilter("filterNotDeletedMessage");
 		
-		return repository.findAll();
+		return modelAssembler.toCollectionModel(repository.findAll());
 	}
 	
 	@GetMapping(path = "{id}")
-	public Message getMessage(@PathVariable int id) {
+	public EntityModel<Message> getMessageById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		return repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id));
+		return modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id)));
 	}
 	
 	@PostMapping
-	public Message addMessage(@RequestBody Message message) {
-		return repository.save(message);
+	public EntityModel<Message> addMessage(@RequestBody Message message) {
+		return modelAssembler.toModel(repository.save(message));
 	}
 	
 	@PutMapping(path = "{id}")
-	public Message updateMessage(@PathVariable int id, @RequestBody Message message) {
+	public EntityModel<Message> updateMessage(@PathVariable int id, @RequestBody Message message) {
 		Optional<Message> foundMessage = repository.findById(id);
 		if(foundMessage.isPresent())
 		{
 			foundMessage.get().updateFields(message, true);
-			return repository.save(foundMessage.get());
+			return modelAssembler.toModel(repository.save(foundMessage.get()));
 		} else {
 			message.setId(id);
-			return repository.save(message);
+			return modelAssembler.toModel(repository.save(message));
 		}
 	}
 
 	@PatchMapping(path = "{id}")
-	public Message updateMessagePartial(@PathVariable int id, @RequestBody Message message) {
+	public EntityModel<Message> updateMessagePartial(@PathVariable int id, @RequestBody Message message) {
 		Message foundMessage = repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id));
 		foundMessage.updateFields(message);
-		return repository.save(foundMessage);
+		return modelAssembler.toModel(repository.save(foundMessage));
 	}
 	
 	@DeleteMapping(path = "{id}")
