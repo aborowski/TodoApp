@@ -14,13 +14,12 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.SQLDelete;
 
 import com.borowski.models.embeddable.SoftDeletable;
 
 @FilterDef(
-		name = "filterTodoNotDeleted",
+		name = "filterTaskNotDeleted",
 		defaultCondition = "deleted = 0")
 
 @Entity
@@ -28,7 +27,7 @@ import com.borowski.models.embeddable.SoftDeletable;
 @DynamicInsert
 @DynamicUpdate
 @SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
-@Filter(name = "filterTodoNotDeleted")
+@Filter(name = "filterTaskNotDeleted")
 public class Task extends EntityMetadata {
 	private String title;
 	private String description;
@@ -116,7 +115,7 @@ public class Task extends EntityMetadata {
 			this.title = updateData.getTitle();
 			this.owner = updateData.getOwner();
 			this.priority = updateData.getPriority();
-			this.softDeletable = updateData.getSoftDeletable();
+			this.softDeletable = updateData.getSoftDeletable() == null ? new SoftDeletable() : updateData.getSoftDeletable();
 			this.watchers = updateData.getWatchers();
 		} else {
 			if(updateData.getDescription() != null)

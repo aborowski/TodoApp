@@ -35,17 +35,15 @@ public class TaskRestController {
 	@GetMapping
 	public List<Task> getTasks() {
 		Session session = em.unwrap(Session.class);
-		session.enableFilter("filterTodoNotDeleted");
+		session.enableFilter("filterTaskNotDeleted");
 		
-		return (List<Task>) repository.findAll();
+		return repository.findAll();
 	}
 	
 	@GetMapping(path = "{id}")
 	public Task getTaskById(@PathVariable int id) {
-		Session session = em.unwrap(Session.class);
-		session.enableFilter("filterTodoNotDeleted");
-		
-		return repository.findById(id).orElseThrow(() -> new NoTaskFoundException("No Task exists with supplied id"));
+		//TODO: filter not deleted somehow. Using filter doesn't work for find one
+		return repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
 	}
 	
 	@PostMapping
@@ -68,7 +66,7 @@ public class TaskRestController {
 	
 	@PatchMapping(path = "{id}")
 	public Task updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
-		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException("No Task exists with supplied id"));
+		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
 		foundTask.updateFields(task);
 		return repository.save(foundTask);
 	}
