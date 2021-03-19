@@ -15,17 +15,17 @@ import javax.persistence.InheritanceType;
 public class EntityMetadata {
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE)
-	private int id;
+	private Integer id;
 	@Column(columnDefinition = "timestamp not null default current_timestamp")
 	private ZonedDateTime createdAt;
 	@Column(columnDefinition = "timestamp on update current_timestamp")
 	private ZonedDateTime updatedAt;
 
-	public int getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 
