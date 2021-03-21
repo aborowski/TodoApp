@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.mediatype.problem.Problem;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.borowski.exceptions.NoTaskFoundException;
+import com.borowski.models.Priority;
 import com.borowski.models.Task;
 import com.borowski.models.hateoas.TaskModelAssembler;
 import com.borowski.repositories.TaskRepository;
@@ -89,5 +93,39 @@ public class TaskRestController {
 	public ResponseEntity<?> deleteTask(@PathVariable int id) {
 		repository.deleteById(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("{id}/lower-priority")
+	public ResponseEntity<?> lowerPriority(@PathVariable Integer id) {
+		Task task = repository.findById(id)
+				.orElseThrow(() -> new NoTaskFoundException(id));
+
+		if(task.getPriority() != Priority.LOW) {
+			task.setPriority(task.getPriority().previous());
+			return ResponseEntity.ok(modelAssembler.toModel(repository.save(task)));
+		}
+		
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.body(Problem.create()
+						.withTitle("Method not allowed")
+						.withDetail("Cannot lower priority for task with " + task.getPriority() + " priority."));
+	}
+
+	@GetMapping("{id}/raise-priority")
+	public ResponseEntity<?> raisePriority(@PathVariable Integer id) {
+		Task task = repository.findById(id)
+				.orElseThrow(() -> new NoTaskFoundException(id));
+
+		if(task.getPriority() != Priority.CRITICAL) {
+			task.setPriority(task.getPriority().next());
+			return ResponseEntity.ok(modelAssembler.toModel(repository.save(task)));
+		}
+		
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.body(Problem.create()
+						.withTitle("Method not allowed")
+						.withDetail("Cannot raise priority for task with " + task.getPriority() + " priority."));
 	}
 }
