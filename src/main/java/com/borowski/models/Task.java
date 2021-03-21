@@ -2,6 +2,7 @@ package com.borowski.models;
 
 import java.util.List;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
@@ -9,6 +10,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -29,14 +32,22 @@ import com.borowski.models.embeddable.SoftDeletable;
 @SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
 @Filter(name = "filterTaskNotDeleted")
 public class Task extends EntityMetadata {
+	@Column(nullable = false, length = 255)
+	@NotBlank(message = "Title cannot be blank")
+	@Size(min = 5, max = 255, message = "Title must be between 5 and 255 characters long")
 	private String title;
+	@Column(length = 4000)
+	@Size(max = 4000, message = "Description cannot be longer than 4000 characters")
 	private String description;
+	//TODO: validation
 	private Priority priority;
 	@ManyToOne
 	@JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_USER_ID"))
+	//TODO: make not nullable when logging in is implemented
 	private User owner;
 	@ManyToMany
 	@JoinTable(name = "TODO_USER", foreignKey = @ForeignKey(name = "FK_TODO_ID"), inverseForeignKey = @ForeignKey(name = "FK_WATCHER_ID"))
+	//TODO: automatically add present use when loggin in is implemented
 	private List<User> watchers;
 	private SoftDeletable softDeletable;
 	

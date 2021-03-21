@@ -5,6 +5,9 @@ import java.util.stream.Stream;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
@@ -27,10 +30,14 @@ import com.borowski.models.embeddable.SoftDeletable;
 @Filter(name = "filterUserNotDeleted")
 public class User extends EntityMetadata {
 	@Column(columnDefinition = "varchar(50) not null unique")
+	@NotBlank(message = "Username cannot be blank")
+	@Size(min = 5, max = 50, message = "Username must be between 5 and 50 characters long")
 	private String username;
+	@NotBlank(message = "First name cannot be blank")
 	private String firstName;
 	private String middleName;
 	private String lastName;
+	@Email(message = "Email must be valid")
 	private String email;
 	private SoftDeletable softDeletable;
 

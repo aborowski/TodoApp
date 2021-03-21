@@ -1,9 +1,12 @@
 package com.borowski.models;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -23,12 +26,17 @@ import com.borowski.models.embeddable.SoftDeletable;
 @SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
 @Filter(name = "filterTaskNotDeleted")
 public class Message extends EntityMetadata {
+	@Column(length = 4000)
+	@NotBlank(message = "Message cannot be blank")
+	@Size(max = 4000, message = "Message cannot be longer that 4000 characters")
 	private String message;
 	@ManyToOne
 	@JoinColumn(name = "TODO_ID", foreignKey = @ForeignKey(name = "FK_MESSAGE_TODO_ID"))
+	//TODO: make not nullable, automatically insert the current task
 	private Task task;
 	@ManyToOne
 	@JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_MESSAGE_USER_ID"))
+	//TODO: make not nullable when logging in is implemented
 	private User owner;
 	private SoftDeletable softDeletable;
 

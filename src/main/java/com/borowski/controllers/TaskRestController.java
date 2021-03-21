@@ -2,6 +2,7 @@ package com.borowski.controllers;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.validation.Valid;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ public class TaskRestController {
 	}
 	
 	@PostMapping
-	public ResponseEntity<EntityModel<Task>> addTask(@RequestBody Task task) {
+	public ResponseEntity<EntityModel<Task>> addTask(@RequestBody @Valid Task task) {
 		Task savedTask = repository.save(task);
 		
 		EntityModel<Task> entityModel = modelAssembler.toModel(savedTask);
@@ -67,7 +68,7 @@ public class TaskRestController {
 	}
 	
 	@PutMapping(path = "{id}")
-	public ResponseEntity<EntityModel<Task>> updateTask(@PathVariable int id, @RequestBody Task task) {
+	public ResponseEntity<EntityModel<Task>> updateTask(@PathVariable int id, @RequestBody @Valid Task task) {
 		Task postTask = repository.findById(id).map((foundTask) -> {
 			return repository.save(foundTask);
 		}).orElseGet(() -> {
@@ -80,6 +81,7 @@ public class TaskRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
+	//TODO how to partially validate?
 	@PatchMapping(path = "{id}")
 	public ResponseEntity<EntityModel<Task>> updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
 		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));

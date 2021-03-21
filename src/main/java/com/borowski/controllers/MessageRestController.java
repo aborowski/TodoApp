@@ -2,6 +2,7 @@ package com.borowski.controllers;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.validation.Valid;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,13 +53,13 @@ public class MessageRestController {
 	}
 	
 	@PostMapping
-	public ResponseEntity<EntityModel<Message>> addMessage(@RequestBody Message message) {
+	public ResponseEntity<EntityModel<Message>> addMessage(@RequestBody @Valid Message message) {
 		EntityModel<Message> entityModel = modelAssembler.toModel(repository.save(message));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@PutMapping(path = "{id}")
-	public ResponseEntity<EntityModel<Message>> updateMessage(@PathVariable int id, @RequestBody Message message) {
+	public ResponseEntity<EntityModel<Message>> updateMessage(@PathVariable int id, @RequestBody @Valid Message message) {
 		EntityModel<Message> entityModel = repository.findById(id).map((foundMessage) -> {
 			foundMessage.updateFields(message, true);
 			return modelAssembler.toModel(repository.save(foundMessage));
@@ -70,6 +71,7 @@ public class MessageRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 
+	//TODO how to partially validate?
 	@PatchMapping(path = "{id}")
 	public ResponseEntity<EntityModel<Message>> updateMessagePartial(@PathVariable int id, @RequestBody Message message) {
 		Message foundMessage = repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id));
