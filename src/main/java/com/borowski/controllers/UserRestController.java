@@ -1,7 +1,5 @@
 package com.borowski.controllers;
 
-import java.util.Optional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
@@ -9,6 +7,8 @@ import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,46 +38,48 @@ public class UserRestController {
 	UserModelAssembler modelAssembler;
 
 	@GetMapping
-	public CollectionModel<EntityModel<User>> getUsers() {
+	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
 		Session session = em.unwrap(Session.class);
 		session.enableFilter("filterUserNotDeleted");
 		
-		return modelAssembler.toCollectionModel(repository.findAll());
+		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
 	@GetMapping(path = "{id}")
-	public EntityModel<User> getUserById(@PathVariable int id) {
+	public ResponseEntity<EntityModel<User>> getUserById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		return modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id)));
+		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id))));
 	}
 	
 	@PostMapping
-	public EntityModel<User> addeUser(@RequestBody User user) {
-		return modelAssembler.toModel(repository.save(user));
+	public ResponseEntity<EntityModel<User>> addeUser(@RequestBody User user) {
+		EntityModel<User> entityModel = modelAssembler.toModel(repository.save(user));
+		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@PutMapping(path = "{id}")
-	public EntityModel<User> updateUser(@PathVariable int id, @RequestBody User user) {
-		Optional<User> foundUser = repository.findById(id);
-		if(foundUser.isPresent())
-		{
-			foundUser.get().updateFields(user, true);
-			return modelAssembler.toModel(repository.save(foundUser.get()));
-		} else {
+	public ResponseEntity<EntityModel<User>> updateUser(@PathVariable int id, @RequestBody User user) {
+		EntityModel<User> entityModel = repository.findById(id).map((foundUser) -> {
+			foundUser.updateFields(user, true);
+			return modelAssembler.toModel(repository.save(foundUser));
+		}).orElseGet(() -> {
 			user.setId(id);
 			return modelAssembler.toModel(repository.save(user));
-		}
+		});
+		
+		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@PatchMapping(path = "{id}")
-	public EntityModel<User> updateUserPartial(@PathVariable int id, @RequestBody User user) {
+	public ResponseEntity<EntityModel<User>> updateUserPartial(@PathVariable int id, @RequestBody User user) {
 		User foundUser = repository.findById(id).orElseThrow(() -> new NoUserFoundException(id));
 		foundUser.updateFields(user);
-		return modelAssembler.toModel(repository.save(foundUser));
+		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundUser)));
 	}
 	
 	@DeleteMapping(path = "{id}")
-	public void deleteUser(@PathVariable int id) {
+	public ResponseEntity<?> deleteUser(@PathVariable int id) {
 		repository.deleteById(id);
+		return ResponseEntity.noContent().build();
 	}
 }
