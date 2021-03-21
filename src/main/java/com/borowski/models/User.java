@@ -1,20 +1,23 @@
 package com.borowski.models;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.SQLDelete;
 
 import com.borowski.models.embeddable.SoftDeletable;
 
 @FilterDef(
 		name = "filterUserNotDeleted",
-		parameters = @ParamDef(name = "deleted", type = "boolean"),
-		defaultCondition = "deleted = :deleted")
+		defaultCondition = "deleted = 0")
 		
 
 @Entity
@@ -23,7 +26,11 @@ import com.borowski.models.embeddable.SoftDeletable;
 @SQLDelete(sql = "update user set deleted = 1, deleted_at = now() where id = ?")
 @Filter(name = "filterUserNotDeleted")
 public class User extends EntityMetadata {
+	@Column(columnDefinition = "varchar(50) not null unique")
 	private String username;
+	private String firstName;
+	private String middleName;
+	private String lastName;
 	private String email;
 	private SoftDeletable softDeletable;
 
@@ -33,6 +40,55 @@ public class User extends EntityMetadata {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+	
+	public String getName() {
+		return Stream.of(this.getFirstName(), this.getMiddleName(), this.getLastName())
+				.filter(s -> s != null && !s.isEmpty())
+				.collect(Collectors.joining(" "));
+	}
+	
+	public void setName(String name) {
+		String[] splitName = name.split(" ");
+		try {
+			this.setFirstName(splitName[0]);
+			this.setLastName(splitName[1]);
+		}
+		catch(IndexOutOfBoundsException iobe) {
+			
+		}
+		
+		this.setFirstName(splitName[0]);
+		if(splitName.length >= 2) {
+			this.setLastName(splitName[splitName.length - 1]);
+			if(splitName.length > 2) {
+				this.setMiddleName(StringUtils.join(splitName, " ", 1, splitName.length - 1));
+			}
+		}
+	}
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public String getMiddleName() {
+		return middleName;
+	}
+
+	public void setMiddleName(String middleName) {
+		this.middleName = middleName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
 	}
 
 	public String getEmail() {
