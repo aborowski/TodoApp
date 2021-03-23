@@ -1,10 +1,9 @@
 package com.borowski.controllers;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -13,6 +12,7 @@ import org.springframework.hateoas.mediatype.problem.Problem;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -29,22 +29,22 @@ import com.borowski.models.Task;
 import com.borowski.models.hateoas.TaskModelAssembler;
 import com.borowski.repositories.TaskRepository;
 
+@Transactional
 @RestController
 @RequestMapping("/web-api/tasks")
 public class TaskRestController {
-	
-	@PersistenceContext
-	EntityManager em;
-	
 	@Autowired
 	TaskRepository repository;
 	
 	@Autowired
 	TaskModelAssembler modelAssembler;
 	
+	@Autowired
+	SessionFactory sessionFactory;
+	
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<Task>>> getTasks() {
-		Session session = em.unwrap(Session.class);
+		Session session = sessionFactory.getCurrentSession();
 		session.enableFilter("filterTaskNotDeleted");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));

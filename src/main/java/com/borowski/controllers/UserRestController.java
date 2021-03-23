@@ -1,15 +1,15 @@
 package com.borowski.controllers;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,22 +26,22 @@ import com.borowski.models.User;
 import com.borowski.models.hateoas.UserModelAssembler;
 import com.borowski.repositories.UserRepository;
 
+@Transactional
 @RestController
 @RequestMapping("/web-api/users")
 public class UserRestController {
-	
-	@PersistenceContext
-	EntityManager em;
-	
 	@Autowired
 	UserRepository repository;
 	
 	@Autowired
 	UserModelAssembler modelAssembler;
+	
+	@Autowired
+	SessionFactory sessionFactory;
 
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
-		Session session = em.unwrap(Session.class);
+		Session session = sessionFactory.getCurrentSession();
 		session.enableFilter("filterUserNotDeleted");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));

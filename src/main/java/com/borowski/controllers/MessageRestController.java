@@ -1,15 +1,15 @@
 package com.borowski.controllers;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,22 +25,22 @@ import com.borowski.models.Message;
 import com.borowski.models.hateoas.MessageModelAssembler;
 import com.borowski.repositories.MessageRepository;
 
+@Transactional
 @RestController
 @RequestMapping(path = "/web-api/messages")
 public class MessageRestController {
-	
-	@PersistenceContext
-	EntityManager em;
-	
 	@Autowired
 	MessageRepository repository;
 	
 	@Autowired
 	MessageModelAssembler modelAssembler;
 	
+	@Autowired
+	SessionFactory sessioNFactory;
+	
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<Message>>> getMessages() {
-		Session session = em.unwrap(Session.class);
+		Session session = sessioNFactory.getCurrentSession();
 		session.enableFilter("filterNotDeletedMessage");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
