@@ -1,10 +1,12 @@
 package com.borowski.controllers;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -30,18 +32,18 @@ import com.borowski.repositories.UserRepository;
 @RestController
 @RequestMapping("/web-api/users")
 public class UserRestController {
+	@PersistenceContext
+	EntityManager entityManager;
+	
 	@Autowired
 	UserRepository repository;
 	
 	@Autowired
 	UserModelAssembler modelAssembler;
-	
-	@Autowired
-	SessionFactory sessionFactory;
 
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
-		Session session = sessionFactory.getCurrentSession();
+		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterUserNotDeleted");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
@@ -85,7 +87,11 @@ public class UserRestController {
 	
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteUser(@PathVariable int id) {
-		repository.deleteById(id);
-		return ResponseEntity.noContent().build();
+		try {
+			repository.deleteById(id);
+			return ResponseEntity.noContent().build();
+		} catch(EmptyResultDataAccessException ex) {
+			throw new NoUserFoundException(id);
+		}
 	}
 }

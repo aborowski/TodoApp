@@ -1,10 +1,12 @@
 package com.borowski.controllers;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -33,18 +35,18 @@ import com.borowski.repositories.TaskRepository;
 @RestController
 @RequestMapping("/web-api/tasks")
 public class TaskRestController {
+	@PersistenceContext
+	EntityManager entityManager;
+	
 	@Autowired
 	TaskRepository repository;
 	
 	@Autowired
 	TaskModelAssembler modelAssembler;
 	
-	@Autowired
-	SessionFactory sessionFactory;
-	
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<Task>>> getTasks() {
-		Session session = sessionFactory.getCurrentSession();
+		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterTaskNotDeleted");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
@@ -93,8 +95,13 @@ public class TaskRestController {
 	
 	@DeleteMapping("{id}")
 	public ResponseEntity<?> deleteTask(@PathVariable int id) {
-		repository.deleteById(id);
-		return ResponseEntity.noContent().build();
+		try {
+			repository.deleteById(id);
+			return ResponseEntity.noContent().build();
+		} catch(EmptyResultDataAccessException ex) {
+			throw new NoTaskFoundException(id);
+		}
+		
 	}
 
 	@GetMapping("{id}/lower-priority")

@@ -17,7 +17,7 @@ public class NotFoundAdvice {
 
 	@ExceptionHandler({NoMessageFoundException.class, NoTaskFoundException.class, NoUserFoundException.class})
 	@ResponseStatus(code = HttpStatus.NOT_FOUND)
-	ResponseEntity<?> messageNotFound(Exception ex) {
+	ResponseEntity<?> handleNotFound(Exception ex) {
 		return ResponseEntity
 				.status(HttpStatus.NOT_FOUND)
 				.contentType(MediaType.APPLICATION_PROBLEM_JSON)

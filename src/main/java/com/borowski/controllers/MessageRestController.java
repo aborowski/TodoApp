@@ -1,10 +1,12 @@
 package com.borowski.controllers;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.validation.Valid;
 
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -29,18 +31,19 @@ import com.borowski.repositories.MessageRepository;
 @RestController
 @RequestMapping(path = "/web-api/messages")
 public class MessageRestController {
+	
+	@PersistenceContext
+	EntityManager entityManager;
+	
 	@Autowired
 	MessageRepository repository;
 	
 	@Autowired
 	MessageModelAssembler modelAssembler;
 	
-	@Autowired
-	SessionFactory sessioNFactory;
-	
 	@GetMapping
 	public ResponseEntity<CollectionModel<EntityModel<Message>>> getMessages() {
-		Session session = sessioNFactory.getCurrentSession();
+		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterNotDeletedMessage");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
@@ -81,7 +84,11 @@ public class MessageRestController {
 	
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteMessage(@PathVariable int id) {
-		repository.deleteById(id);
+		try {
+			repository.deleteById(id);
 		return ResponseEntity.noContent().build();
+		} catch (EmptyResultDataAccessException ex) {
+			throw new NoMessageFoundException(id);
+		}
 	}
 }
