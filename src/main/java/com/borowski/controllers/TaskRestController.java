@@ -44,7 +44,7 @@ public class TaskRestController {
 	@Autowired
 	TaskModelAssembler modelAssembler;
 	
-	@GetMapping
+	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<CollectionModel<EntityModel<Task>>> getTasks() {
 		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterTaskNotDeleted");
@@ -52,7 +52,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
-	@GetMapping(path = "{id}")
+	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> getTaskById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
 		Task task = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
@@ -60,7 +60,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(modelAssembler.toModel(task));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> addTask(@RequestBody @Valid Task task) {
 		Task savedTask = repository.save(task);
 		
@@ -69,7 +69,7 @@ public class TaskRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
-	@PutMapping(path = "{id}")
+	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTask(@PathVariable int id, @RequestBody @Valid Task task) {
 		Task postTask = repository.findById(id).map((foundTask) -> {
 			return repository.save(foundTask);
@@ -84,7 +84,7 @@ public class TaskRestController {
 	}
 	
 	//TODO how to partially validate?
-	@PatchMapping(path = "{id}")
+	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
 		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
 		foundTask.updateFields(task);
@@ -93,7 +93,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(entityModel);
 	}
 	
-	@DeleteMapping("{id}")
+	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteTask(@PathVariable int id) {
 		try {
 			repository.deleteById(id);
@@ -101,10 +101,9 @@ public class TaskRestController {
 		} catch(EmptyResultDataAccessException ex) {
 			throw new NoTaskFoundException(id);
 		}
-		
 	}
 
-	@GetMapping("{id}/lower-priority")
+	@GetMapping(path = "{id}/lower-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> lowerPriority(@PathVariable Integer id) {
 		Task task = repository.findById(id)
 				.orElseThrow(() -> new NoTaskFoundException(id));
@@ -121,7 +120,7 @@ public class TaskRestController {
 						.withDetail("Cannot lower priority for task with " + task.getPriority() + " priority."));
 	}
 
-	@GetMapping("{id}/raise-priority")
+	@GetMapping(path = "{id}/raise-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> raisePriority(@PathVariable Integer id) {
 		Task task = repository.findById(id)
 				.orElseThrow(() -> new NoTaskFoundException(id));

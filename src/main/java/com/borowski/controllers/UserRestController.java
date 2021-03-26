@@ -10,6 +10,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,7 +42,7 @@ public class UserRestController {
 	@Autowired
 	UserModelAssembler modelAssembler;
 
-	@GetMapping
+	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
 		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterUserNotDeleted");
@@ -49,13 +50,13 @@ public class UserRestController {
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
-	@GetMapping(path = "{id}")
+	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> getUserById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
 		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id))));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> addeUser(@RequestBody @Valid User user) {
 		if(repository.findByUsername(user.getUsername()).isPresent())
 			throw new DuplicateUsernameException(user.getUsername());
@@ -64,7 +65,7 @@ public class UserRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
-	@PutMapping(path = "{id}")
+	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUser(@PathVariable int id, @RequestBody @Valid User user) {
 		EntityModel<User> entityModel = repository.findById(id).map((foundUser) -> {
 			foundUser.updateFields(user, true);
@@ -78,7 +79,7 @@ public class UserRestController {
 	}
 	
 	//TODO how to partially validate?
-	@PatchMapping(path = "{id}")
+	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUserPartial(@PathVariable int id, @RequestBody User user) {
 		User foundUser = repository.findById(id).orElseThrow(() -> new NoUserFoundException(id));
 		foundUser.updateFields(user);
