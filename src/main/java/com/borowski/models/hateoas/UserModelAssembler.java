@@ -11,7 +11,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
-import com.borowski.controllers.UserRestController;
+import com.borowski.controllers.rest.UserRestController;
 import com.borowski.models.User;
 
 @Component

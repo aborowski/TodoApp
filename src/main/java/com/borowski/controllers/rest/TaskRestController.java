@@ -1,4 +1,4 @@
-package com.borowski.controllers;
+package com.borowski.controllers.rest;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;

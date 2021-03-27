@@ -1,4 +1,4 @@
-package com.borowski.controllers;
+package com.borowski.controllers.rest;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -23,73 +23,76 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.borowski.exceptions.NoMessageFoundException;
-import com.borowski.models.Message;
-import com.borowski.models.hateoas.MessageModelAssembler;
-import com.borowski.repositories.MessageRepository;
+import com.borowski.exceptions.DuplicateUsernameException;
+import com.borowski.exceptions.NoUserFoundException;
+import com.borowski.models.User;
+import com.borowski.models.hateoas.UserModelAssembler;
+import com.borowski.repositories.UserRepository;
 
 @Transactional
 @RestController
-@RequestMapping(path = "/web-api/messages")
-public class MessageRestController {
-	
+@RequestMapping("/web-api/users")
+public class UserRestController {
 	@PersistenceContext
 	EntityManager entityManager;
 	
 	@Autowired
-	MessageRepository repository;
+	UserRepository repository;
 	
 	@Autowired
-	MessageModelAssembler modelAssembler;
-	
+	UserModelAssembler modelAssembler;
+
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public ResponseEntity<CollectionModel<EntityModel<Message>>> getMessages() {
+	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
 		Session session = entityManager.unwrap(Session.class);
-		session.enableFilter("filterNotDeletedMessage");
+		session.enableFilter("filterUserNotDeleted");
 		
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public ResponseEntity<EntityModel<Message>> getMessageById(@PathVariable int id) {
+	public ResponseEntity<EntityModel<User>> getUserById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id))));
+		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id))));
 	}
 	
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public ResponseEntity<EntityModel<Message>> addMessage(@RequestBody @Valid Message message) {
-		EntityModel<Message> entityModel = modelAssembler.toModel(repository.save(message));
+	public ResponseEntity<EntityModel<User>> addeUser(@RequestBody @Valid User user) {
+		if(repository.findByUsername(user.getUsername()).isPresent())
+			throw new DuplicateUsernameException(user.getUsername());
+		
+		EntityModel<User> entityModel = modelAssembler.toModel(repository.save(user));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public ResponseEntity<EntityModel<Message>> updateMessage(@PathVariable int id, @RequestBody @Valid Message message) {
-		EntityModel<Message> entityModel = repository.findById(id).map((foundMessage) -> {
-			foundMessage.updateFields(message, true);
-			return modelAssembler.toModel(repository.save(foundMessage));
+	public ResponseEntity<EntityModel<User>> updateUser(@PathVariable int id, @RequestBody @Valid User user) {
+		EntityModel<User> entityModel = repository.findById(id).map((foundUser) -> {
+			foundUser.updateFields(user, true);
+			return modelAssembler.toModel(repository.save(foundUser));
 		}).orElseGet(() -> {
-			message.setId(id);
-			return modelAssembler.toModel(repository.save(message));
+			user.setId(id);
+			return modelAssembler.toModel(repository.save(user));
 		});
 		
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
-
+	
 	//TODO how to partially validate?
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public ResponseEntity<EntityModel<Message>> updateMessagePartial(@PathVariable int id, @RequestBody Message message) {
-		Message foundMessage = repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id));
-		foundMessage.updateFields(message);
-		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundMessage)));
+	public ResponseEntity<EntityModel<User>> updateUserPartial(@PathVariable int id, @RequestBody User user) {
+		User foundUser = repository.findById(id).orElseThrow(() -> new NoUserFoundException(id));
+		foundUser.updateFields(user);
+		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundUser)));
 	}
 	
 	@DeleteMapping(path = "{id}")
-	public ResponseEntity<?> deleteMessage(@PathVariable int id) {
+	public ResponseEntity<?> deleteUser(@PathVariable int id) {
 		try {
 			repository.deleteById(id);
-		return ResponseEntity.noContent().build();
-		} catch (EmptyResultDataAccessException ex) {
-			throw new NoMessageFoundException(id);
+			return ResponseEntity.noContent().build();
+		} catch(EmptyResultDataAccessException ex) {
+			throw new NoUserFoundException(id);
 		}
 	}
 }

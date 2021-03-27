@@ -11,8 +11,8 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
-import com.borowski.controllers.MessageRestController;
-import com.borowski.controllers.TaskRestController;
+import com.borowski.controllers.rest.MessageRestController;
+import com.borowski.controllers.rest.TaskRestController;
 import com.borowski.models.Message;
 import com.borowski.models.Task;
 
