@@ -17,14 +17,14 @@ import org.hibernate.annotations.SQLDelete;
 import com.borowski.models.embeddable.SoftDeletable;
 
 @FilterDef(
-		name = "filterTaskNotDeleted",
+		name = "filterMessageNotDeleted",
 		defaultCondition = "deleted = 0")
 
 @Entity
 @DynamicInsert
 @DynamicUpdate
-@SQLDelete(sql = "update todo set deleted = 1, deleted_at = now() where id = ?")
-@Filter(name = "filterTaskNotDeleted")
+@SQLDelete(sql = "update message set deleted = 1, deleted_at = now() where id = ?")
+@Filter(name = "filterMessageNotDeleted")
 public class Message extends EntityMetadata {
 	@Column(length = 4000)
 	@NotBlank(message = "Message cannot be blank")
