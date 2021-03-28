@@ -6,7 +6,6 @@ import javax.validation.Valid;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -23,17 +22,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.borowski.exceptions.DuplicateUsernameException;
-import com.borowski.exceptions.NoUserFoundException;
 import com.borowski.models.User;
 import com.borowski.models.hateoas.UserModelAssembler;
-import com.borowski.repositories.UserRepository;
+import com.borowski.services.UserService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
 @Api(tags = "Users", protocols = "https")
-@Transactional
 @RestController
 @RequestMapping("/web-api/users")
 public class UserRestController {
@@ -41,10 +37,10 @@ public class UserRestController {
 	EntityManager entityManager;
 	
 	@Autowired
-	UserRepository repository;
+	UserModelAssembler modelAssembler;
 	
 	@Autowired
-	UserModelAssembler modelAssembler;
+	UserService userService;
 
 	@ApiOperation(consumes = "application/json, application/xml", value = "Get Users")
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
@@ -52,37 +48,27 @@ public class UserRestController {
 		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterUserNotDeleted");
 		
-		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
+		return ResponseEntity.ok(modelAssembler.toCollectionModel(userService.getUsers()));
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Get User by ID")
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> getUserById(@PathVariable int id) {
-		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id))));
+		return ResponseEntity.ok(modelAssembler.toModel(userService.getUserById(id)));
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Create User")
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> addeUser(@RequestBody @Valid User user) {
-		if(repository.findByUsername(user.getUsername()).isPresent())
-			throw new DuplicateUsernameException(user.getUsername());
-		
-		EntityModel<User> entityModel = modelAssembler.toModel(repository.save(user));
+		EntityModel<User> entityModel = modelAssembler.toModel(userService.createUser(user));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Replace User")
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUser(@PathVariable int id, @RequestBody @Valid User user) {
-		EntityModel<User> entityModel = repository.findById(id).map((foundUser) -> {
-			foundUser.updateFields(user, true);
-			return modelAssembler.toModel(repository.save(foundUser));
-		}).orElseGet(() -> {
-			user.setId(id);
-			return modelAssembler.toModel(repository.save(user));
-		});
-		
+		user.setId(id);
+		EntityModel<User> entityModel = modelAssembler.toModel(userService.replaceUser(user));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
@@ -90,19 +76,14 @@ public class UserRestController {
 	@ApiOperation(consumes = "application/json, application/xml", value = "Update User")
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUserPartial(@PathVariable int id, @RequestBody User user) {
-		User foundUser = repository.findById(id).orElseThrow(() -> new NoUserFoundException(id));
-		foundUser.updateFields(user);
-		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundUser)));
+		user.setId(id);
+		return ResponseEntity.ok(modelAssembler.toModel(userService.updateUser(user)));
 	}
 	
 	@ApiOperation(value = "Delete User")
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteUser(@PathVariable int id) {
-		try {
-			repository.deleteById(id);
-			return ResponseEntity.noContent().build();
-		} catch(EmptyResultDataAccessException ex) {
-			throw new NoUserFoundException(id);
-		}
+		userService.deleteUserById(id);
+		return ResponseEntity.noContent().build();
 	}
 }

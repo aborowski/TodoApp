@@ -6,15 +6,11 @@ import javax.validation.Valid;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.mediatype.problem.Problem;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,17 +21,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.borowski.exceptions.NoTaskFoundException;
-import com.borowski.models.Priority;
 import com.borowski.models.Task;
 import com.borowski.models.hateoas.TaskModelAssembler;
-import com.borowski.repositories.TaskRepository;
+import com.borowski.services.TaskService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
 @Api(tags = "Tasks", protocols = "https")
-@Transactional
 @RestController
 @RequestMapping("/web-api/tasks")
 public class TaskRestController {
@@ -43,10 +36,10 @@ public class TaskRestController {
 	EntityManager entityManager;
 	
 	@Autowired
-	TaskRepository repository;
+	TaskModelAssembler modelAssembler;
 	
 	@Autowired
-	TaskModelAssembler modelAssembler;
+	TaskService taskService;
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Get Tasks")
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
@@ -54,40 +47,27 @@ public class TaskRestController {
 		Session session = entityManager.unwrap(Session.class);
 		session.enableFilter("filterTaskNotDeleted");
 		
-		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
+		return ResponseEntity.ok(modelAssembler.toCollectionModel(taskService.getTasks()));
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Get Task by ID")
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> getTaskById(@PathVariable int id) {
-		//TODO: filter not deleted somehow. Using filter doesn't work for find one
-		Task task = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
-		
-		return ResponseEntity.ok(modelAssembler.toModel(task));
+		return ResponseEntity.ok(modelAssembler.toModel(taskService.getTaskById(id)));
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Create Task")
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> addTask(@RequestBody @Valid Task task) {
-		Task savedTask = repository.save(task);
-		
-		EntityModel<Task> entityModel = modelAssembler.toModel(savedTask);
-		
+		EntityModel<Task> entityModel = modelAssembler.toModel(taskService.createTask(task));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
 	@ApiOperation(consumes = "application/json, application/xml", value = "Replace Task")
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTask(@PathVariable int id, @RequestBody @Valid Task task) {
-		Task postTask = repository.findById(id).map((foundTask) -> {
-			return repository.save(foundTask);
-		}).orElseGet(() -> {
-			task.setId(id);
-			return repository.save(task);
-		});
-		
-		EntityModel<Task> entityModel = modelAssembler.toModel(postTask);
-		
+		task.setId(id);
+		EntityModel<Task> entityModel = modelAssembler.toModel(taskService.replaceTask(task));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
@@ -95,57 +75,27 @@ public class TaskRestController {
 	@ApiOperation(consumes = "application/json, application/xml", value = "Update Task")
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
-		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
-		foundTask.updateFields(task);
-		EntityModel<Task> entityModel = modelAssembler.toModel(repository.save(foundTask));
-		
+		task.setId(id);
+		EntityModel<Task> entityModel = modelAssembler.toModel(taskService.updateTask(task));
 		return ResponseEntity.ok(entityModel);
 	}
 	
 	@ApiOperation(value = "Delete Task")
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteTask(@PathVariable int id) {
-		try {
-			repository.deleteById(id);
-			return ResponseEntity.noContent().build();
-		} catch(EmptyResultDataAccessException ex) {
-			throw new NoTaskFoundException(id);
-		}
+		taskService.deleteTaskById(id);
+		return ResponseEntity.noContent().build();
 	}
 
 	@ApiOperation(value = "Lower Priority of Task")
 	@GetMapping(path = "{id}/lower-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> lowerPriority(@PathVariable Integer id) {
-		Task task = repository.findById(id)
-				.orElseThrow(() -> new NoTaskFoundException(id));
-
-		if(task.getPriority() != Priority.LOW) {
-			task.setPriority(task.getPriority().previous());
-			return ResponseEntity.ok(modelAssembler.toModel(repository.save(task)));
-		}
-		
-		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
-				.body(Problem.create()
-						.withTitle("Method not allowed")
-						.withDetail("Cannot lower priority for task with " + task.getPriority() + " priority."));
+		return ResponseEntity.ok(modelAssembler.toModel(taskService.lowerPriority(id)));
 	}
 
 	@ApiOperation(value = "Raise Priority of Task")
 	@GetMapping(path = "{id}/raise-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> raisePriority(@PathVariable Integer id) {
-		Task task = repository.findById(id)
-				.orElseThrow(() -> new NoTaskFoundException(id));
-
-		if(task.getPriority() != Priority.CRITICAL) {
-			task.setPriority(task.getPriority().next());
-			return ResponseEntity.ok(modelAssembler.toModel(repository.save(task)));
-		}
-		
-		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
-				.body(Problem.create()
-						.withTitle("Method not allowed")
-						.withDetail("Cannot raise priority for task with " + task.getPriority() + " priority."));
+		return ResponseEntity.ok(modelAssembler.toModel(taskService.raisePriority(id)));
 	}
 }
