@@ -10,6 +10,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,10 @@ import com.borowski.models.Message;
 import com.borowski.models.hateoas.MessageModelAssembler;
 import com.borowski.repositories.MessageRepository;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@Api(protocols = "https", tags = "Messages")
 @Transactional
 @RestController
 @RequestMapping(path = "/web-api/messages")
@@ -42,6 +47,7 @@ public class MessageRestController {
 	@Autowired
 	MessageModelAssembler modelAssembler;
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get Messages")
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<CollectionModel<EntityModel<Message>>> getMessages() {
 		Session session = entityManager.unwrap(Session.class);
@@ -50,18 +56,21 @@ public class MessageRestController {
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get Message by ID")
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Message>> getMessageById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
 		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id))));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Create Message")
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Message>> addMessage(@RequestBody @Valid Message message) {
 		EntityModel<Message> entityModel = modelAssembler.toModel(repository.save(message));
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Replace Message")
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Message>> updateMessage(@PathVariable int id, @RequestBody @Valid Message message) {
 		EntityModel<Message> entityModel = repository.findById(id).map((foundMessage) -> {
@@ -76,6 +85,7 @@ public class MessageRestController {
 	}
 
 	//TODO how to partially validate?
+	@ApiOperation(consumes = "application/json, application/xml", value = "Update Message")
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Message>> updateMessagePartial(@PathVariable int id, @RequestBody Message message) {
 		Message foundMessage = repository.findById(id).orElseThrow(() -> new NoMessageFoundException(id));
@@ -83,6 +93,7 @@ public class MessageRestController {
 		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundMessage)));
 	}
 	
+	@ApiOperation(value = "Delete Message")
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteMessage(@PathVariable int id) {
 		try {

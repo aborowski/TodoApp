@@ -31,6 +31,10 @@ import com.borowski.models.Task;
 import com.borowski.models.hateoas.TaskModelAssembler;
 import com.borowski.repositories.TaskRepository;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@Api(tags = "Tasks", protocols = "https")
 @Transactional
 @RestController
 @RequestMapping("/web-api/tasks")
@@ -44,6 +48,7 @@ public class TaskRestController {
 	@Autowired
 	TaskModelAssembler modelAssembler;
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get Tasks")
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<CollectionModel<EntityModel<Task>>> getTasks() {
 		Session session = entityManager.unwrap(Session.class);
@@ -52,6 +57,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get Task by ID")
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> getTaskById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
@@ -60,6 +66,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(modelAssembler.toModel(task));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Create Task")
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> addTask(@RequestBody @Valid Task task) {
 		Task savedTask = repository.save(task);
@@ -69,6 +76,7 @@ public class TaskRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Replace Task")
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTask(@PathVariable int id, @RequestBody @Valid Task task) {
 		Task postTask = repository.findById(id).map((foundTask) -> {
@@ -84,6 +92,7 @@ public class TaskRestController {
 	}
 	
 	//TODO how to partially validate?
+	@ApiOperation(consumes = "application/json, application/xml", value = "Update Task")
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<Task>> updateTaskPartial(@PathVariable int id, @RequestBody Task task) {
 		Task foundTask = repository.findById(id).orElseThrow(() -> new NoTaskFoundException(id));
@@ -93,6 +102,7 @@ public class TaskRestController {
 		return ResponseEntity.ok(entityModel);
 	}
 	
+	@ApiOperation(value = "Delete Task")
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteTask(@PathVariable int id) {
 		try {
@@ -103,6 +113,7 @@ public class TaskRestController {
 		}
 	}
 
+	@ApiOperation(value = "Lower Priority of Task")
 	@GetMapping(path = "{id}/lower-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> lowerPriority(@PathVariable Integer id) {
 		Task task = repository.findById(id)
@@ -120,6 +131,7 @@ public class TaskRestController {
 						.withDetail("Cannot lower priority for task with " + task.getPriority() + " priority."));
 	}
 
+	@ApiOperation(value = "Raise Priority of Task")
 	@GetMapping(path = "{id}/raise-priority", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<?> raisePriority(@PathVariable Integer id) {
 		Task task = repository.findById(id)

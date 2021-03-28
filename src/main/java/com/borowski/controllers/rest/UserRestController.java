@@ -29,6 +29,10 @@ import com.borowski.models.User;
 import com.borowski.models.hateoas.UserModelAssembler;
 import com.borowski.repositories.UserRepository;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@Api(tags = "Users", protocols = "https")
 @Transactional
 @RestController
 @RequestMapping("/web-api/users")
@@ -42,6 +46,7 @@ public class UserRestController {
 	@Autowired
 	UserModelAssembler modelAssembler;
 
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get Users")
 	@GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<CollectionModel<EntityModel<User>>> getUsers() {
 		Session session = entityManager.unwrap(Session.class);
@@ -50,12 +55,14 @@ public class UserRestController {
 		return ResponseEntity.ok(modelAssembler.toCollectionModel(repository.findAll()));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Get User by ID")
 	@GetMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> getUserById(@PathVariable int id) {
 		//TODO: filter not deleted somehow. Using filter doesn't work for find one
 		return ResponseEntity.ok(modelAssembler.toModel(repository.findById(id).orElseThrow(() -> new NoUserFoundException(id))));
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Create User")
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> addeUser(@RequestBody @Valid User user) {
 		if(repository.findByUsername(user.getUsername()).isPresent())
@@ -65,6 +72,7 @@ public class UserRestController {
 		return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
 	}
 	
+	@ApiOperation(consumes = "application/json, application/xml", value = "Replace User")
 	@PutMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUser(@PathVariable int id, @RequestBody @Valid User user) {
 		EntityModel<User> entityModel = repository.findById(id).map((foundUser) -> {
@@ -79,6 +87,7 @@ public class UserRestController {
 	}
 	
 	//TODO how to partially validate?
+	@ApiOperation(consumes = "application/json, application/xml", value = "Update User")
 	@PatchMapping(path = "{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	public ResponseEntity<EntityModel<User>> updateUserPartial(@PathVariable int id, @RequestBody User user) {
 		User foundUser = repository.findById(id).orElseThrow(() -> new NoUserFoundException(id));
@@ -86,6 +95,7 @@ public class UserRestController {
 		return ResponseEntity.ok(modelAssembler.toModel(repository.save(foundUser)));
 	}
 	
+	@ApiOperation(value = "Delete User")
 	@DeleteMapping(path = "{id}")
 	public ResponseEntity<?> deleteUser(@PathVariable int id) {
 		try {
